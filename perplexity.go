@@ -85,17 +85,19 @@ func (s *Client) SendCompletionRequest(req *CompletionRequest) (*CompletionRespo
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
 	// Check return status code
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusUnauthorized {
 			return nil, fmt.Errorf("unauthorized: check your API key")
 		}
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("unexpected status code: %d: %.500s", resp.StatusCode, body)
 	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
+
 	err = json.Unmarshal(body, r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body: %w - body response=%s", err, string(body))
